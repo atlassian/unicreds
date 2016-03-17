@@ -1,5 +1,5 @@
 [![Build
-status](https://travis-ci.org/versent/unicreds.svg)](https://travis-ci.org/versent/unicreds)
+status](https://travis-ci.org/atlassian/unicreds.svg)](https://travis-ci.org/atlassian/unicreds)
 
 # unicreds
 

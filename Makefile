@@ -9,10 +9,9 @@ build:
 	go build -ldflags "-X main.Version=$(VERSION)" -o build/bin/$(NAME) ./cmd/unicreds
 
 build-all:
-	rm -rf build && mkdir build
-	mkdir -p build/Linux  && GOOS=linux  go build -ldflags "-X main.Version=$(VERSION)" -o build/Linux/$(NAME) ./cmd/unicreds
-	mkdir -p build/Darwin && GOOS=darwin go build -ldflags "-X main.Version=$(VERSION)" -o build/Darwin/$(NAME) ./cmd/unicreds
-	mkdir -p build/Darwin && GOOS=windows go build -ldflags "-X main.Version=$(VERSION)" -o build/Windows/$(NAME).exe ./cmd/unicreds
+	GOOS=linux  go build -ldflags "-X main.Version=$(VERSION)" -o build/$(NAME)_linux_$(ARCH) ./cmd/unicreds
+	GOOS=darwin go build -ldflags "-X main.Version=$(VERSION)" -o build/$(NAME)_darwin_$(ARCH) ./cmd/unicreds
+	GOOS=windows go build -ldflags "-X main.Version=$(VERSION)" -o build/$(NAME)_windows$(ARCH).exe ./cmd/unicreds
 
 fmt:
 	gofmt -w=true $$(find . -type f -name '*.go')

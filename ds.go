@@ -76,17 +76,19 @@ type DecryptedCredential struct {
 	Secret string
 }
 
-// ByVersion sort helper for credentials
-type ByVersion []*Credential
+// ByName sort by name
+type ByName []*Credential
 
-func (a ByVersion) Len() int      { return len(a) }
-func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (slice ByName) Len() int {
+	return len(slice)
+}
 
-func (a ByVersion) Less(i, j int) bool {
-	aiv, _ := strconv.Atoi(a[i].Version)
-	ajv, _ := strconv.Atoi(a[j].Version)
+func (slice ByName) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
 
-	return aiv < ajv
+func (slice ByName) Less(i, j int) bool {
+	return slice[i].Name < slice[j].Name
 }
 
 // Setup create the table which stores credentials
@@ -223,16 +225,13 @@ func ListSecrets(all bool) ([]*Credential, error) {
 		return nil, err
 	}
 
-	if all {
-		return decodeCredential(res.Items)
-	}
-
 	creds, err := decodeCredential(res.Items)
 	if err != nil {
 		return nil, err
 	}
 
-	return filterLatest(creds)
+	sort.Sort(ByName(creds))
+	return creds, nil
 }
 
 // GetAllSecrets returns a list of all secrets
@@ -465,28 +464,6 @@ func decodeCredential(items []map[string]*dynamodb.AttributeValue) ([]*Credentia
 
 		results = append(results, cred)
 	}
-	return results, nil
-}
-
-func filterLatest(creds []*Credential) ([]*Credential, error) {
-
-	sort.Sort(ByVersion(creds))
-
-	names := map[string]*Credential{}
-
-	for _, cred := range creds {
-		names[cred.Name] = cred
-	}
-
-	results := make([]*Credential, 0, len(names))
-
-	for _, val := range names {
-		results = append(results, val)
-	}
-
-	// because maps key order is randomised in golang
-	sort.Sort(ByVersion(results))
-
 	return results, nil
 }
 

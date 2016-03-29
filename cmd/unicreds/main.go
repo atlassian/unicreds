@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"net/http"
+	"os"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
@@ -15,13 +15,13 @@ import (
 )
 
 const (
-	zoneUrl = "http://169.254.169.254/latest/meta-data/placement/availability-zone"
+	zoneURL = "http://169.254.169.254/latest/meta-data/placement/availability-zone"
 )
 
 var (
 	app   = kingpin.New("unicreds", "A credential/secret storage command line tool.")
-	debug = app.Flag("debug", "Enable debug mode.").Short('d').Bool()
 	csv   = app.Flag("csv", "Enable csv output for table data.").Short('c').Bool()
+	debug = app.Flag("debug", "Enable debug mode.").Short('d').Bool()
 
 	region = app.Flag("region", "Configure the AWS region").Short('r').String()
 
@@ -61,6 +61,10 @@ func main() {
 
 	command := kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	if *debug {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	if *region != "" {
 		// update the aws config overrides if present
 		setRegion(region)
@@ -80,6 +84,7 @@ func main() {
 		if err != nil {
 			printFatalError(err)
 		}
+		log.Info("Created table")
 	case cmdGet.FullCommand():
 		cred, err := unicreds.GetSecret(*cmdGetName)
 		if err != nil {
@@ -129,7 +134,9 @@ func main() {
 		for _, cred := range creds {
 			table.Write([]string{cred.Name, cred.Version, cred.CreatedAtDate()})
 		}
-		table.Render()
+		if err = table.Render(); err != nil {
+			printFatalError(err)
+		}
 	case cmdGetAll.FullCommand():
 		creds, err := unicreds.GetAllSecrets(true)
 		if err != nil {
@@ -146,7 +153,10 @@ func main() {
 		for _, cred := range creds {
 			table.Write([]string{cred.Name, cred.Secret})
 		}
-		table.Render()
+
+		if err = table.Render(); err != nil {
+			printFatalError(err)
+		}
 	case cmdDelete.FullCommand():
 		err := unicreds.DeleteSecret(*cmdDeleteName)
 		if err != nil {
@@ -157,7 +167,8 @@ func main() {
 
 func getRegion() (*string, error) {
 	// Use meta-data to get our region
-	response, err := http.Get(zoneUrl)
+	log.Debug("Fetching meta data")
+	response, err := http.Get(zoneURL)
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +180,12 @@ func getRegion() (*string, error) {
 	}
 
 	// Strip last char
-	r := string(contents[0:len(string(contents))-1])
+	r := string(contents[0 : len(string(contents))-1])
 	return &r, nil
 }
 
 func setRegion(region *string) {
+	log.WithField("region", *region).Debug("Setting region")
 	unicreds.SetDynamoDBConfig(&aws.Config{Region: region})
 	unicreds.SetKMSConfig(&aws.Config{Region: region})
 }
